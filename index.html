@@ -1,0 +1,855 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Consulta de CNPJ — ReceitaWS (standalone)</title>
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{
+      --bg:#0b0f14; --card:#111824; --muted:#8aa0b6; --text:#eaf2fb;
+      --border:#1d2a3a; --accent:#4ea1ff;
+      --ok:#2ecc71; --warn:#f1c40f; --bad:#ff5c5c;
+      --chip:#0e2238; --shadow:0 10px 30px rgba(0,0,0,.35);
+      --radius:16px;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji","Segoe UI Emoji";
+    }
+    @media (prefers-color-scheme: light){
+      :root{
+        --bg:#f6f8fb; --card:#ffffff; --muted:#516577; --text:#0b1220;
+        --border:#e6edf5; --accent:#0b6bff;
+        --ok:#1f9d55; --warn:#b58a00; --bad:#d64545;
+        --chip:#edf4ff; --shadow:0 10px 30px rgba(16,24,40,.08);
+      }
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0; font-family:var(--sans); color:var(--text); min-height:100vh;
+      background:
+        radial-gradient(1200px 600px at 20% -20%, rgba(78,161,255,.25), transparent 60%),
+        radial-gradient(900px 500px at 120% 10%, rgba(46,204,113,.18), transparent 55%),
+        var(--bg);
+    }
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 60px}
+    header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    h1{margin:0;font-size:22px;letter-spacing:.2px}
+    .sub{margin:6px 0 0;color:var(--muted);font-size:13px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .search{
+      margin-top:18px; padding:16px; display:flex; gap:10px;
+      align-items:center; flex-wrap:wrap;
+    }
+    .search input{
+      flex:1 1 260px; min-width:240px; padding:12px 12px;
+      border-radius:12px; border:1px solid var(--border);
+      background:transparent; color:var(--text); outline:none; font-size:14px;
+    }
+    .btn{
+      padding:11px 14px; border-radius:12px; border:1px solid var(--border);
+      background: color-mix(in oklab, var(--accent) 22%, transparent);
+      color:var(--text); cursor:pointer; font-weight:800; font-size:14px;
+      user-select:none;
+    }
+    .btn.secondary{background:transparent}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .hint{color:var(--muted);font-size:12px}
+    .chip{
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background: color-mix(in oklab, var(--chip) 85%, transparent);
+      font-size:12px;
+      display:inline-flex; align-items:center; gap:8px;
+      max-width:100%;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+    .panel{padding:16px}
+    .sec-title{margin:0 0 10px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+    .hero h2{margin:0 0 4px;font-size:18px}
+    .meta{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; color:var(--muted); font-size:13px}
+    .badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .badge{
+      display:flex;flex-direction:column;gap:6px;
+      padding:12px; border-radius:14px;
+      border:1px solid var(--border);
+      background: color-mix(in oklab, var(--chip) 75%, transparent);
+      min-width:230px; flex:1 1 230px;
+    }
+    .badge .k{font-size:12px;color:var(--muted)}
+    .badge .v{font-size:16px;font-weight:900;letter-spacing:.2px}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      border:1px solid var(--border);
+      background: color-mix(in oklab, var(--chip) 85%, transparent);
+      font-weight:900;font-size:13px;
+      max-width:100%; flex-wrap:wrap;
+    }
+    .dot{width:9px;height:9px;border-radius:50%}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warn)}
+    .dot.bad{background:var(--bad)}
+    .kv{
+      display:grid;
+      grid-template-columns: 180px 1fr;
+      gap:10px 14px;
+      padding:12px 0;
+      border-top:1px dashed color-mix(in oklab, var(--border) 70%, transparent);
+    }
+    .kv:first-of-type{border-top:0;padding-top:0}
+    .k{color:var(--muted);font-size:13px}
+    .v{font-size:14px;word-break:break-word}
+    details{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+    summary{cursor:pointer;font-weight:900;padding:8px 0;list-style:none}
+    summary::-webkit-details-marker{display:none}
+    summary .sm{color:var(--muted);font-weight:800;margin-left:8px;font-size:12px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .statusline{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;flex-wrap:wrap;
+      padding:10px 12px;border-radius:12px;
+      border:1px solid var(--border);
+      background: color-mix(in oklab, var(--chip) 75%, transparent);
+      margin-top:12px;
+    }
+    .okbox{
+      border-color: color-mix(in oklab, var(--ok) 45%, var(--border));
+      background: color-mix(in oklab, var(--ok) 10%, transparent);
+    }
+    .errbox{
+      border-color: color-mix(in oklab, var(--bad) 45%, var(--border));
+      background: color-mix(in oklab, var(--bad) 10%, transparent);
+    }
+    .statusline .left{display:flex;align-items:center;gap:10px}
+    .right-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:12px;color:var(--muted)}
+    .full{grid-column:1/-1;}
+    .twoCols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:920px){ .twoCols{grid-template-columns:1fr} }
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:var(--card);border:1px solid var(--border);
+      padding:10px 12px;border-radius:999px;box-shadow:var(--shadow);
+      font-size:13px;display:none;gap:10px;align-items:center;
+      z-index:9999;
+    }
+    .toast.show{display:flex}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div>
+        <h1>Consulta de CNPJ — ReceitaWS (standalone)</h1>
+        <div class="sub">Consulta por CNPJ e exibe as informações com destaque para <b>Simples Nacional</b> e <b>SIMEI/MEI</b>.</div>
+      </div>
+      <div class="hint">
+        URL compartilhável:
+        <a id="shareLink" class="chip" href="?cnpj=00000000000000">?cnpj=00000000000000</a>
+      </div>
+    </header>
+
+    <div class="card search">
+      <input id="cnpj" inputmode="numeric" autocomplete="off" placeholder="Digite o CNPJ (somente números ou com máscara)" />
+      <button id="btnSearch" class="btn">Consultar</button>
+      <button id="btnClear" class="btn secondary">Limpar</button>
+      <div class="row">
+        <label class="hint"><input id="chkNoCache" type="checkbox" /> Ignorar cache local</label>
+        <span class="hint" id="cooldownHint"></span>
+      </div>
+    </div>
+
+    <div id="out"></div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      const API_BASE = "/.netlify/functions/cnpj?cnpj=";
+      const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+      const COOLDOWN_MS = 3000;
+      const STORAGE_PREFIX = "receitaws_cache_v3:";
+
+      const $ = (id) => document.getElementById(id);
+
+      const cnpjInput = $("cnpj");
+      const btnSearch = $("btnSearch");
+      const btnClear = $("btnClear");
+      const out = $("out");
+      const chkNoCache = $("chkNoCache");
+      const cooldownHint = $("cooldownHint");
+      const toast = $("toast");
+      const shareLink = $("shareLink");
+
+      let lastRequestAt = 0;
+      let lastData = null;
+
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 1800);
+      }
+
+      function onlyDigits(s) { return String(s || "").replace(/\D+/g, ""); }
+
+      function formatCNPJ(d) {
+        const x = onlyDigits(d);
+        if (x.length !== 14) return d;
+        return x.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+      }
+
+      function parseISOorBRDate(s) {
+        if (!s) return "—";
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) return d.toLocaleString("pt-BR");
+        return String(s);
+      }
+
+      function textOrDash(s) {
+        const t = String(s ?? "").trim();
+        return t ? t : "—";
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? "").replace(/[&<>"']/g, (m) => ({
+          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+        }[m]));
+      }
+
+      function cnpjIsValid(cnpjDigits) {
+        const cnpj = onlyDigits(cnpjDigits);
+        if (cnpj.length !== 14) return false;
+        if (/^(\d)\1+$/.test(cnpj)) return false;
+
+        const calcDV = (base) => {
+          const weights = base.length === 12
+            ? [5,4,3,2,9,8,7,6,5,4,3,2]
+            : [6,5,4,3,2,9,8,7,6,5,4,3,2];
+          let sum = 0;
+          for (let i = 0; i < weights.length; i++) sum += Number(base[i]) * weights[i];
+          const mod = sum % 11;
+          return (mod < 2) ? 0 : (11 - mod);
+        };
+
+        const dv1 = calcDV(cnpj.slice(0, 12));
+        const dv2 = calcDV(cnpj.slice(0, 12) + dv1);
+        return cnpj.endsWith(String(dv1) + String(dv2));
+      }
+
+      function cacheKey(cnpjDigits) { return STORAGE_PREFIX + onlyDigits(cnpjDigits); }
+
+      function getCached(cnpjDigits) {
+        try {
+          const raw = localStorage.getItem(cacheKey(cnpjDigits));
+          if (!raw) return null;
+          const obj = JSON.parse(raw);
+          if (!obj || !obj.at || !obj.data) return null;
+          if (Date.now() - obj.at > CACHE_TTL_MS) return null;
+          return obj.data;
+        } catch { return null; }
+      }
+
+      function setCached(cnpjDigits, data) {
+        try {
+          localStorage.setItem(cacheKey(cnpjDigits), JSON.stringify({ at: Date.now(), data }));
+        } catch {}
+      }
+
+      function setCooldownHint() {
+        const remain = Math.max(0, COOLDOWN_MS - (Date.now() - lastRequestAt));
+        if (remain <= 0) { cooldownHint.textContent = ""; return; }
+        cooldownHint.textContent = "Aguarde " + (remain / 1000).toFixed(1) + "s para nova consulta";
+        setTimeout(setCooldownHint, 120);
+      }
+
+      function updateShareLink(digits) {
+        const url = new URL(location.href);
+        if (digits && digits.length === 14) url.searchParams.set("cnpj", digits);
+        else url.searchParams.delete("cnpj");
+        shareLink.href = url.toString();
+        const q = url.searchParams.get("cnpj");
+        shareLink.textContent = q ? ("?cnpj=" + q) : "?cnpj=00000000000000";
+      }
+
+      function pillEl(status, label) {
+        const span = document.createElement("span");
+        span.className = "pill";
+        const dot = document.createElement("span");
+        dot.className = "dot " + (status === "ok" ? "ok" : status === "bad" ? "bad" : "warn");
+        span.appendChild(dot);
+        span.appendChild(document.createTextNode(label));
+        return span;
+      }
+
+      function chipEl(text) {
+        const s = document.createElement("span");
+        s.className = "chip";
+        s.textContent = text;
+        return s;
+      }
+
+      function kvEl(key, valueNodeOrText) {
+        const row = document.createElement("div");
+        row.className = "kv";
+
+        const k = document.createElement("div");
+        k.className = "k";
+        k.textContent = key;
+
+        const v = document.createElement("div");
+        v.className = "v";
+        if (valueNodeOrText instanceof Node) v.appendChild(valueNodeOrText);
+        else v.textContent = valueNodeOrText;
+
+        row.appendChild(k);
+        row.appendChild(v);
+        return row;
+      }
+
+      function chipsFromActivities(arr) {
+        const wrap = document.createElement("div");
+        wrap.className = "chips";
+        if (!Array.isArray(arr) || arr.length === 0) {
+          wrap.appendChild(document.createTextNode("—"));
+          return wrap;
+        }
+        for (const a of arr) {
+          const t = (a && (a.text || a.code))
+            ? (String(a.code || "") + (a.code ? " — " : "") + String(a.text || "")).trim()
+            : JSON.stringify(a);
+
+          const c = document.createElement("span");
+          c.className = "chip";
+          c.textContent = t;
+          wrap.appendChild(c);
+        }
+        return wrap;
+      }
+
+      function downloadText(filename, text, mime) {
+        const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          URL.revokeObjectURL(a.href);
+          a.remove();
+        }, 0);
+      }
+
+      function generateMarkdown(data) {
+        const digits = onlyDigits(data?.cnpj || "");
+        const cnpjFmt = formatCNPJ(digits);
+        const updated = parseISOorBRDate(data?.ultima_atualizacao);
+
+        const simplesOpt = !!data?.simples?.optante;
+        const simeiOpt = !!data?.simei?.optante;
+
+        const endereco = [
+          data?.logradouro, data?.numero, data?.complemento,
+          data?.bairro, data?.municipio, data?.uf, data?.cep
+        ].filter(Boolean).join(", ");
+
+        const lines = [];
+        lines.push("# Relatório CNPJ — " + (cnpjFmt || "—"));
+        lines.push("");
+        lines.push("- **Nome:** " + (data?.nome || "—"));
+        lines.push("- **Fantasia:** " + (data?.fantasia || "—"));
+        lines.push("- **Situação:** " + (data?.situacao || "—") + " (" + (data?.data_situacao || "—") + ")");
+        lines.push("- **Natureza jurídica:** " + (data?.natureza_juridica || "—"));
+        lines.push("- **Porte:** " + (data?.porte || "—"));
+        lines.push("- **Abertura:** " + (data?.abertura || "—"));
+        lines.push("- **Capital social:** " + (data?.capital_social || "—"));
+        lines.push("- **Atualizado em:** " + updated);
+        lines.push("");
+        lines.push("## Regimes");
+        lines.push("- **Simples Nacional:** " + (simplesOpt ? "SIM" : "NÃO"));
+        lines.push("  - Opção: " + (data?.simples?.data_opcao || "—"));
+        lines.push("  - Exclusão: " + (data?.simples?.data_exclusao || "—"));
+        lines.push("  - Últ. atualização: " + parseISOorBRDate(data?.simples?.ultima_atualizacao));
+        lines.push("- **SIMEI/MEI:** " + (simeiOpt ? "SIM" : "NÃO"));
+        lines.push("  - Opção: " + (data?.simei?.data_opcao || "—"));
+        lines.push("  - Exclusão: " + (data?.simei?.data_exclusao || "—"));
+        lines.push("  - Últ. atualização: " + parseISOorBRDate(data?.simei?.ultima_atualizacao));
+        lines.push("");
+        lines.push("## Endereço e contato");
+        lines.push("- **Endereço:** " + (endereco || "—"));
+        lines.push("- **Telefone:** " + (data?.telefone || "—"));
+        lines.push("- **E-mail:** " + (data?.email || "—"));
+        lines.push("");
+        lines.push("## CNAE");
+        lines.push("**Principal:**");
+        if (Array.isArray(data?.atividade_principal) && data.atividade_principal.length){
+          for (const a of data.atividade_principal) {
+            const t = (a.code ? a.code + " — " : "") + (a.text || "");
+            lines.push("- " + t.trim());
+          }
+        } else lines.push("- —");
+        lines.push("");
+        lines.push("**Secundárias:**");
+        if (Array.isArray(data?.atividades_secundarias) && data.atividades_secundarias.length){
+          for (const a of data.atividades_secundarias) {
+            const t = (a.code ? a.code + " — " : "") + (a.text || "");
+            lines.push("- " + t.trim());
+          }
+        } else lines.push("- —");
+        lines.push("");
+        lines.push("## QSA");
+        if (Array.isArray(data?.qsa) && data.qsa.length){
+          for (const p of data.qsa) lines.push("- " + (p?.nome || "—") + " — " + (p?.qual || "—"));
+        } else lines.push("- —");
+
+        return lines.join("\n");
+      }
+
+      // ✅ PDF: sem <script> dentro do HTML gerado (evita quebrar a página principal)
+      function openPrintWindow(data) {
+        const digits = onlyDigits(data?.cnpj || "");
+        const cnpjFmt = formatCNPJ(digits);
+        const updated = parseISOorBRDate(data?.ultima_atualizacao);
+
+        const simplesOpt = !!data?.simples?.optante;
+        const simeiOpt = !!data?.simei?.optante;
+
+        const endereco = [
+          data?.logradouro, data?.numero, data?.complemento,
+          data?.bairro, data?.municipio, data?.uf, data?.cep
+        ].filter(Boolean).join(", ");
+
+        const list = (arr) => {
+          if (!Array.isArray(arr) || arr.length === 0) return "<li>—</li>";
+          return arr.map(a => {
+            const t = (a && (a.text || a.code))
+              ? ((a.code ? a.code + " — " : "") + (a.text || "")).trim()
+              : JSON.stringify(a);
+            return "<li>" + escapeHtml(t) + "</li>";
+          }).join("");
+        };
+
+        const qsaList = (() => {
+          const arr = Array.isArray(data?.qsa) ? data.qsa : [];
+          if (arr.length === 0) return "<li>—</li>";
+          return arr.map(p => "<li>" + escapeHtml(p?.nome || "—") + " — " + escapeHtml(p?.qual || "—") + "</li>").join("");
+        })();
+
+        const html =
+`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Relatório CNPJ ${escapeHtml(cnpjFmt || "")}</title>
+<style>
+  body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;margin:28px;color:#111}
+  h1{margin:0 0 6px;font-size:20px}
+  .muted{color:#555;font-size:12px}
+  .box{border:1px solid #ddd;border-radius:10px;padding:14px;margin:12px 0}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  @media print{ body{margin:0.8cm} }
+  @media (max-width:720px){ .grid{grid-template-columns:1fr} }
+  table{width:100%;border-collapse:collapse}
+  td{vertical-align:top;padding:6px 8px;border-bottom:1px solid #eee;font-size:13px}
+  td.k{width:220px;color:#444}
+  .pill{display:inline-block;padding:6px 10px;border-radius:999px;border:1px solid #ddd;font-weight:800;font-size:12px}
+  .ok{background:#e8fff1}
+  .bad{background:#ffecec}
+  .warn{background:#fff7df}
+  ul{margin:6px 0 0 18px}
+</style>
+</head>
+<body onload="window.print()">
+  <h1>Relatório CNPJ — ${escapeHtml(cnpjFmt || "—")}</h1>
+  <div class="muted">Atualizado em: ${escapeHtml(updated)} • Gerado em: ${new Date().toLocaleString("pt-BR")}</div>
+
+  <div class="box grid">
+    <div>
+      <div class="muted" style="margin-bottom:6px">Identificação</div>
+      <table>
+        <tr><td class="k">Nome</td><td>${escapeHtml(data?.nome || "—")}</td></tr>
+        <tr><td class="k">Fantasia</td><td>${escapeHtml(data?.fantasia || "—")}</td></tr>
+        <tr><td class="k">Situação</td><td>${escapeHtml(data?.situacao || "—")} (${escapeHtml(data?.data_situacao || "—")})</td></tr>
+        <tr><td class="k">Natureza jurídica</td><td>${escapeHtml(data?.natureza_juridica || "—")}</td></tr>
+        <tr><td class="k">Porte</td><td>${escapeHtml(data?.porte || "—")}</td></tr>
+        <tr><td class="k">Abertura</td><td>${escapeHtml(data?.abertura || "—")}</td></tr>
+        <tr><td class="k">Capital social</td><td>${escapeHtml(data?.capital_social || "—")}</td></tr>
+      </table>
+    </div>
+    <div>
+      <div class="muted" style="margin-bottom:6px">Regimes</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px">
+        <span class="pill ${simplesOpt ? "ok" : "bad"}">Simples Nacional: ${simplesOpt ? "SIM" : "NÃO"}</span>
+        <span class="pill ${simeiOpt ? "ok" : "warn"}">SIMEI/MEI: ${simeiOpt ? "SIM" : "NÃO"}</span>
+      </div>
+      <table>
+        <tr><td class="k">Simples — Opção</td><td>${escapeHtml(data?.simples?.data_opcao || "—")}</td></tr>
+        <tr><td class="k">Simples — Exclusão</td><td>${escapeHtml(data?.simples?.data_exclusao || "—")}</td></tr>
+        <tr><td class="k">SIMEI — Opção</td><td>${escapeHtml(data?.simei?.data_opcao || "—")}</td></tr>
+        <tr><td class="k">SIMEI — Exclusão</td><td>${escapeHtml(data?.simei?.data_exclusao || "—")}</td></tr>
+      </table>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="muted" style="margin-bottom:6px">Endereço e contato</div>
+    <table>
+      <tr><td class="k">Endereço</td><td>${escapeHtml(endereco || "—")}</td></tr>
+      <tr><td class="k">Telefone</td><td>${escapeHtml(data?.telefone || "—")}</td></tr>
+      <tr><td class="k">E-mail</td><td>${escapeHtml(data?.email || "—")}</td></tr>
+    </table>
+  </div>
+
+  <div class="box grid">
+    <div>
+      <div class="muted">CNAE principal</div>
+      <ul>${list(Array.isArray(data?.atividade_principal) ? data.atividade_principal : [])}</ul>
+    </div>
+    <div>
+      <div class="muted">CNAEs secundários</div>
+      <ul>${list(Array.isArray(data?.atividades_secundarias) ? data.atividades_secundarias : [])}</ul>
+    </div>
+  </div>
+
+  <div class="box">
+    <div class="muted">QSA</div>
+    <ul>${qsaList}</ul>
+  </div>
+</body>
+</html>`;
+
+        const w = window.open("", "_blank", "noopener,noreferrer");
+        if (!w) { showToast("Popup bloqueado pelo navegador."); return; }
+        w.document.open();
+        w.document.write(html);
+        w.document.close();
+      }
+
+      async function fetchCNPJ(cnpjDigits, opts) {
+        const digits = onlyDigits(cnpjDigits);
+        const noCache = !!(opts && opts.noCache);
+
+        if (!cnpjIsValid(digits)) throw new Error("CNPJ inválido. Verifique os dígitos.");
+
+        const now = Date.now();
+        if (now - lastRequestAt < COOLDOWN_MS) {
+          setCooldownHint();
+          throw new Error("Aguarde alguns segundos antes de consultar novamente.");
+        }
+
+        if (!noCache) {
+          const cached = getCached(digits);
+          if (cached) return { data: cached, fromCache: true };
+        }
+
+        lastRequestAt = now;
+        setCooldownHint();
+
+        const url = API_BASE + digits;
+
+        let resp;
+        try {
+          resp = await fetch(url, { method: "GET", headers: { "Accept": "application/json" } });
+        } catch {
+          throw new Error("Falha ao chamar a API (rede).");
+        }
+
+        if (!resp.ok) throw new Error("HTTP " + resp.status + " ao consultar a API.");
+        const data = await resp.json();
+
+        if (data && data.status && String(data.status).toUpperCase() !== "OK") {
+          throw new Error(data.message || data.motivo || "A API retornou erro.");
+        }
+
+        setCached(digits, data);
+        return { data, fromCache: false };
+      }
+
+      function setLoading(isLoading) {
+        btnSearch.disabled = isLoading;
+        btnClear.disabled = isLoading;
+        cnpjInput.disabled = isLoading;
+        btnSearch.textContent = isLoading ? "Consultando..." : "Consultar";
+      }
+
+      function renderError(title, detail) {
+        out.innerHTML = "";
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        const left = document.createElement("div");
+        left.className = "card panel errbox";
+        left.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Erro" }));
+        left.appendChild(Object.assign(document.createElement("div"), { style:"font-size:16px;font-weight:900", textContent:title }));
+        left.appendChild(Object.assign(document.createElement("div"), { className:"small", style:"margin-top:6px", textContent: detail || "" }));
+
+        const right = document.createElement("div");
+        right.className = "card panel";
+        right.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Depuração" }));
+        right.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Abra o console do navegador (F12) para detalhes." }));
+
+        grid.appendChild(left);
+        grid.appendChild(right);
+        out.appendChild(grid);
+      }
+
+      function renderData(data) {
+        lastData = data;
+        out.innerHTML = "";
+
+        const digits = onlyDigits(data?.cnpj || "");
+        updateShareLink(digits);
+
+        const heroName = data?.nome || data?.fantasia || "Empresa";
+        const cnpjFmt = formatCNPJ(digits || "");
+        const updated = parseISOorBRDate(data?.ultima_atualizacao);
+
+        const situ = String(data?.situacao || "").trim();
+        const situPill = pillEl(situ.toUpperCase() === "ATIVA" ? "ok" : "warn", "Situação: " + (situ || "—"));
+
+        const simplesOpt = !!data?.simples?.optante;
+        const simeiOpt = !!data?.simei?.optante;
+
+        const simplesPill = pillEl(simplesOpt ? "ok" : "bad", "Simples Nacional: " + (simplesOpt ? "SIM" : "NÃO"));
+        const simeiPill = pillEl(simeiOpt ? "ok" : "warn", "SIMEI/MEI: " + (simeiOpt ? "SIM" : "NÃO"));
+
+        const endereco = [
+          data?.logradouro, data?.numero, data?.complemento,
+          data?.bairro, data?.municipio, data?.uf, data?.cep
+        ].filter(Boolean).join(", ");
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        const hero = document.createElement("div");
+        hero.className = "card panel hero";
+        hero.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Visão geral" }));
+        hero.appendChild(Object.assign(document.createElement("h2"), { textContent: heroName }));
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.appendChild(chipEl("CNPJ: " + (cnpjFmt || "—")));
+        meta.appendChild(chipEl("Atualizado em: " + updated));
+        hero.appendChild(meta);
+
+        const badges = document.createElement("div");
+        badges.className = "badges";
+
+        const b1 = document.createElement("div");
+        b1.className = "badge";
+        b1.appendChild(Object.assign(document.createElement("div"), { className:"k", textContent:"Status" }));
+        const b1v = document.createElement("div");
+        b1v.className = "v"; b1v.appendChild(situPill);
+        b1.appendChild(b1v);
+        b1.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Data situação: " + textOrDash(data?.data_situacao) }));
+        b1.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Motivo situação: " + textOrDash(data?.motivo_situacao) }));
+
+        const b2 = document.createElement("div");
+        b2.className = "badge";
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"k", textContent:"Regime tributário" }));
+        const b2v = document.createElement("div");
+        b2v.className = "v"; b2v.appendChild(simplesPill);
+        b2.appendChild(b2v);
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Opção: " + textOrDash(data?.simples?.data_opcao) }));
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Exclusão: " + textOrDash(data?.simples?.data_exclusao) }));
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Últ. atualização: " + parseISOorBRDate(data?.simples?.ultima_atualizacao) }));
+
+        const b3 = document.createElement("div");
+        b3.className = "badge";
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"k", textContent:"MEI / SIMEI" }));
+        const b3v = document.createElement("div");
+        b3v.className = "v"; b3v.appendChild(simeiPill);
+        b3.appendChild(b3v);
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Opção: " + textOrDash(data?.simei?.data_opcao) }));
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Exclusão: " + textOrDash(data?.simei?.data_exclusao) }));
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Últ. atualização: " + parseISOorBRDate(data?.simei?.ultima_atualizacao) }));
+
+        badges.appendChild(b1); badges.appendChild(b2); badges.appendChild(b3);
+        hero.appendChild(badges);
+
+        const statusline = document.createElement("div");
+        statusline.className = "statusline okbox";
+
+        const leftLine = document.createElement("div");
+        leftLine.className = "left";
+        leftLine.appendChild(Object.assign(document.createElement("span"), { className:"dot ok" }));
+
+        const linkWrap = document.createElement("div");
+        linkWrap.appendChild(Object.assign(document.createElement("b"), { textContent:"Link: " }));
+        const a = document.createElement("a");
+        a.href = shareLink.href;
+        a.textContent = shareLink.textContent;
+        linkWrap.appendChild(a);
+        leftLine.appendChild(linkWrap);
+
+        const actions = document.createElement("div");
+        actions.className = "right-actions";
+
+        const btnPdf = document.createElement("button");
+        btnPdf.className = "btn secondary";
+        btnPdf.textContent = "Gerar PDF";
+        btnPdf.addEventListener("click", () => openPrintWindow(data));
+
+        const btnMd = document.createElement("button");
+        btnMd.className = "btn secondary";
+        btnMd.textContent = "Gerar Markdown";
+        btnMd.addEventListener("click", async () => {
+          const md = generateMarkdown(data);
+          downloadText("cnpj-" + digits + ".md", md, "text/markdown;charset=utf-8");
+          try { await navigator.clipboard.writeText(md); showToast("Markdown baixado e copiado."); }
+          catch { showToast("Markdown baixado."); }
+        });
+
+        const btnCopy = document.createElement("button");
+        btnCopy.className = "btn secondary";
+        btnCopy.textContent = "Copiar link";
+        btnCopy.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(shareLink.href); showToast("Link copiado."); }
+          catch { showToast("Não foi possível copiar link."); }
+        });
+
+        actions.appendChild(btnPdf);
+        actions.appendChild(btnMd);
+        actions.appendChild(btnCopy);
+
+        statusline.appendChild(leftLine);
+        statusline.appendChild(actions);
+        hero.appendChild(statusline);
+
+        const ident = document.createElement("div");
+        ident.className = "card panel";
+        ident.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Identificação" }));
+        ident.appendChild(kvEl("Nome", textOrDash(data?.nome)));
+        ident.appendChild(kvEl("Fantasia", textOrDash(data?.fantasia)));
+        ident.appendChild(kvEl("Tipo", textOrDash(data?.tipo)));
+        ident.appendChild(kvEl("Porte", textOrDash(data?.porte)));
+        ident.appendChild(kvEl("Natureza Jurídica", textOrDash(data?.natureza_juridica)));
+        ident.appendChild(kvEl("Abertura", textOrDash(data?.abertura)));
+        ident.appendChild(kvEl("Capital Social", textOrDash(data?.capital_social)));
+        ident.appendChild(kvEl("EFR", textOrDash(data?.efr)));
+        ident.appendChild(kvEl("Situação Especial", textOrDash(data?.situacao_especial)));
+        ident.appendChild(kvEl("Data Situação Especial", textOrDash(data?.data_situacao_especial)));
+
+        const addr = document.createElement("div");
+        addr.className = "card panel full";
+        addr.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Endereço e contato" }));
+        const two = document.createElement("div");
+        two.className = "twoCols";
+        const col1 = document.createElement("div");
+        col1.appendChild(kvEl("Endereço", endereco || "—"));
+        col1.appendChild(kvEl("Município/UF", textOrDash(data?.municipio) + " / " + textOrDash(data?.uf)));
+        col1.appendChild(kvEl("CEP", textOrDash(data?.cep)));
+        const col2 = document.createElement("div");
+        col2.appendChild(kvEl("Telefone", textOrDash(data?.telefone)));
+        col2.appendChild(kvEl("E-mail", textOrDash(data?.email)));
+        col2.appendChild(kvEl("Última atualização (geral)", updated));
+        two.appendChild(col1); two.appendChild(col2);
+        addr.appendChild(two);
+
+        const cnae = document.createElement("div");
+        cnae.className = "card panel full";
+        cnae.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Atividades (CNAE)" }));
+        cnae.appendChild(kvEl("Principal", chipsFromActivities(data?.atividade_principal)));
+        const det = document.createElement("details");
+        const sum = document.createElement("summary");
+        const secCount = Array.isArray(data?.atividades_secundarias) ? data.atividades_secundarias.length : 0;
+        sum.appendChild(document.createTextNode("Secundárias "));
+        sum.appendChild(Object.assign(document.createElement("span"), { className:"sm", textContent:"(" + secCount + ")" }));
+        det.appendChild(sum);
+        const secWrap = document.createElement("div");
+        secWrap.style.marginTop = "10px";
+        secWrap.appendChild(chipsFromActivities(data?.atividades_secundarias));
+        det.appendChild(secWrap);
+        cnae.appendChild(det);
+
+        const qsa = document.createElement("div");
+        qsa.className = "card panel full";
+        qsa.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"QSA (sócios e administradores)" }));
+        qsa.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Dados potencialmente sensíveis. Exibidos sob demanda." }));
+        const qsaDet = document.createElement("details");
+        const qsaSum = document.createElement("summary");
+        const qsaCount = Array.isArray(data?.qsa) ? data.qsa.length : 0;
+        qsaSum.appendChild(document.createTextNode("Mostrar QSA "));
+        qsaSum.appendChild(Object.assign(document.createElement("span"), { className:"sm", textContent:"(" + qsaCount + ")" }));
+        qsaDet.appendChild(qsaSum);
+        const qsaBody = document.createElement("div");
+        qsaBody.style.marginTop = "10px";
+        if (Array.isArray(data?.qsa) && data.qsa.length) {
+          for (const p of data.qsa) qsaBody.appendChild(kvEl(p?.nome || "—", p?.qual || "—"));
+        } else {
+          qsaBody.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"—" }));
+        }
+        qsaDet.appendChild(qsaBody);
+        qsa.appendChild(qsaDet);
+
+        grid.appendChild(hero);
+        grid.appendChild(ident);
+        grid.appendChild(addr);
+        grid.appendChild(cnae);
+        grid.appendChild(qsa);
+
+        out.appendChild(grid);
+      }
+
+      async function runSearch() {
+        const raw = cnpjInput.value;
+        const digits = onlyDigits(raw);
+        if (digits.length === 14) cnpjInput.value = formatCNPJ(digits);
+
+        setLoading(true);
+        out.innerHTML = "";
+
+        try {
+          const res = await fetchCNPJ(digits, { noCache: chkNoCache.checked });
+          renderData(res.data);
+          showToast(res.fromCache ? "Resultado do cache local." : "Consulta concluída.");
+        } catch (e) {
+          renderError("Não foi possível consultar o CNPJ", e?.message || String(e));
+          console.error(e);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function clearAll() {
+        lastData = null;
+        out.innerHTML = "";
+        cnpjInput.value = "";
+        const url = new URL(location.href);
+        url.searchParams.delete("cnpj");
+        history.replaceState({}, "", url.toString());
+        updateShareLink(null);
+      }
+
+      btnSearch.addEventListener("click", runSearch);
+      btnClear.addEventListener("click", clearAll);
+      cnpjInput.addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+
+      const initial = new URL(location.href).searchParams.get("cnpj");
+      if (initial) {
+        const digits = onlyDigits(initial);
+        cnpjInput.value = formatCNPJ(digits);
+        updateShareLink(digits);
+        runSearch();
+      } else {
+        updateShareLink(null);
+      }
+    })();
+  </script>
+</body>
+</html>
