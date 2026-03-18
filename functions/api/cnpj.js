@@ -1,4 +1,4 @@
-// functions/api/cnpj.js
+// functions/api/cnpj.js 
 export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
