@@ -1,0 +1,1389 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Consulta de CNPJ - ReceitaWS + API Publica</title>
+  <meta name="description" content="Consulta de CNPJ com dados mesclados da ReceitaWS e API Publica CNPJ.ws." />
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23155e75'/%3E%3Cpath d='M8 18h16v6H8zM11 9h10v6H11z' fill='white'/%3E%3C/svg%3E" />
+  <meta name="color-scheme" content="light dark" />
+  <style>
+    :root{
+      --bg:#F9FAFB; --card:#FFFFFF; --surface:#F2F4F7; --muted:#667085; --text:#1D2939;
+      --border:#D0D5DD; --divider:#EAECF0; --accent:#155E75; --accent-contrast:#FFFFFF;
+      --ok:#039855; --warn:#F79009; --bad:#D92D20;
+      --ok-bg:#ECFDF3; --warn-bg:#FFFAEB; --bad-bg:#FEF3F2;
+      --chip:#F2F4F7; --shadow:0 1px 3px rgba(0,0,0,.06),0 1px 2px rgba(0,0,0,.04);
+      --focus:rgba(21,94,117,.18);
+      --radius:12px;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    @media (prefers-color-scheme: dark){
+      :root:not([data-theme="light"]){
+        --bg:#0F141B; --card:#161C24; --surface:#1D2530; --muted:#98A2B3; --text:#F2F4F7;
+        --border:#344054; --divider:#2B3442; --accent:#6AB6D6; --accent-contrast:#0F141B;
+        --ok:#47CD89; --warn:#FDB022; --bad:#F97066;
+        --ok-bg:#082A1D; --warn-bg:#2D2107; --bad-bg:#321111;
+        --chip:#1D2530; --shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+        --focus:rgba(106,182,214,.22);
+      }
+    }
+    :root[data-theme="dark"]{
+      --bg:#0F141B; --card:#161C24; --surface:#1D2530; --muted:#98A2B3; --text:#F2F4F7;
+      --border:#344054; --divider:#2B3442; --accent:#6AB6D6; --accent-contrast:#0F141B;
+      --ok:#47CD89; --warn:#FDB022; --bad:#F97066;
+      --ok-bg:#082A1D; --warn-bg:#2D2107; --bad-bg:#321111;
+      --chip:#1D2530; --shadow:0 1px 3px rgba(0,0,0,.12),0 1px 2px rgba(0,0,0,.08);
+      --focus:rgba(106,182,214,.22);
+    }
+    *{box-sizing:border-box}
+    [hidden]{display:none!important}
+    body{margin:0; font-family:var(--sans); color:var(--text); min-height:100vh;background:var(--bg)}
+    a{color:var(--accent); text-decoration:none}
+    a:hover{text-decoration:underline}
+    .wrap{max-width:1100px;margin:0 auto;padding:28px 18px 60px}
+    header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;flex-wrap:wrap}
+    h1{margin:0;font-size:24px;letter-spacing:0}
+    .title-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .version-pill{
+      display:inline-flex;align-items:center;min-height:24px;
+      padding:3px 9px;border-radius:999px;border:1px solid var(--border);
+      color:var(--muted);background:var(--chip);
+      font-size:12px;font-weight:800;
+    }
+    .sub{margin:6px 0 0;color:var(--muted);font-size:14px}
+    .card{
+      background:var(--card);
+      border:1px solid var(--border);
+      border-radius:var(--radius);
+      box-shadow:var(--shadow);
+    }
+    .search{
+      margin-top:18px; padding:16px; display:flex; gap:10px;
+      align-items:center; flex-wrap:wrap;
+    }
+    .search input{
+      flex:1 1 260px; min-width:240px; padding:12px 12px;
+      border-radius:8px; border:1px solid var(--border);
+      background:transparent; color:var(--text); outline:none; font-size:14px;
+    }
+    .btn{
+      padding:11px 14px; border-radius:8px; border:1px solid var(--accent);
+      background:var(--accent);
+      color:var(--accent-contrast); cursor:pointer; font-weight:800; font-size:14px;
+      user-select:none;
+    }
+    .btn.secondary{background:transparent;color:var(--text);border-color:var(--border)}
+    .btn:disabled{opacity:.6;cursor:not-allowed}
+    .row{display:flex;gap:12px;flex-wrap:wrap;align-items:center}
+    .hint{color:var(--muted);font-size:12px}
+    .chip{
+      padding:6px 10px;border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--chip);
+      font-size:12px;
+      display:inline-flex; align-items:center; gap:8px;
+      max-width:100%;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1.25fr .75fr;
+      gap:14px;
+      margin-top:14px;
+    }
+    @media (max-width: 920px){ .grid{grid-template-columns:1fr} }
+    .panel{padding:16px}
+    .sec-title{margin:0 0 10px;font-size:14px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em}
+    .hero h2{margin:0 0 4px;font-size:18px}
+    .meta{display:flex; flex-wrap:wrap; gap:8px; margin-top:8px; color:var(--muted); font-size:14px}
+    .badges{display:flex;gap:10px;flex-wrap:wrap;margin-top:14px}
+    .badge{
+      display:flex;flex-direction:column;gap:6px;
+      padding:16px; border-radius:8px;
+      border:1px solid var(--border);
+      background:var(--surface);
+      min-width:230px; flex:1 1 230px;
+    }
+    .badge .k{font-size:12px;color:var(--muted)}
+    .badge .v{font-size:16px;font-weight:900;letter-spacing:.2px}
+    .pill{
+      display:inline-flex; align-items:center; gap:8px;
+      padding:8px 10px; border-radius:999px;
+      border:1px solid var(--border);
+      background:var(--chip);
+      font-weight:900;font-size:14px;
+      max-width:100%; flex-wrap:wrap;
+    }
+    .dot{width:9px;height:9px;border-radius:50%}
+    .dot.ok{background:var(--ok)}
+    .dot.warn{background:var(--warn)}
+    .dot.bad{background:var(--bad)}
+    .kv{
+      display:grid;
+      grid-template-columns: 180px 1fr;
+      gap:10px 14px;
+      padding:12px 0;
+      border-top:1px solid var(--divider);
+    }
+    .kv:first-of-type{border-top:0;padding-top:0}
+    .k{color:var(--muted);font-size:14px}
+    .v{font-size:14px;word-break:break-word}
+    details{border-top:1px solid var(--border);padding-top:10px;margin-top:10px}
+    summary{cursor:pointer;font-weight:900;padding:8px 0;list-style:none}
+    summary::-webkit-details-marker{display:none}
+    summary .sm{color:var(--muted);font-weight:800;margin-left:8px;font-size:12px}
+    .chips{display:flex;gap:8px;flex-wrap:wrap}
+    .statusline{
+      display:flex;align-items:center;justify-content:space-between;
+      gap:12px;flex-wrap:wrap;
+      padding:10px 12px;border-radius:12px;
+      border:1px solid var(--border);
+      background:var(--surface);
+      margin-top:12px;
+    }
+    .okbox{
+      border-color:var(--ok);
+      background:var(--ok-bg);
+    }
+    .errbox{
+      border-color:var(--bad);
+      background:var(--bad-bg);
+    }
+    .statusline .left{display:flex;align-items:center;gap:10px}
+    .right-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .small{font-size:12px;color:var(--muted)}
+    .full{grid-column:1/-1;}
+    .twoCols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+    @media (max-width:920px){ .twoCols{grid-template-columns:1fr} }
+    .toast{
+      position:fixed;left:50%;bottom:18px;transform:translateX(-50%);
+      background:var(--card);border:1px solid var(--border);
+      padding:10px 12px;border-radius:999px;box-shadow:var(--shadow);
+      font-size:13px;display:none;gap:10px;align-items:center;
+      z-index:9999;
+    }
+    .toast.show{display:flex}
+    .theme-control{display:flex;align-items:center;gap:8px;justify-content:flex-end;flex-wrap:wrap}
+    .theme-control label{font-size:12px;color:var(--muted);font-weight:800}
+    .theme-select{
+      min-height:34px;border-radius:8px;border:1px solid var(--border);
+      background:var(--card);color:var(--text);font:inherit;font-size:14px;padding:6px 28px 6px 10px;
+    }
+    .pin-gate{
+      position:fixed;inset:0;z-index:10000;display:grid;place-items:center;
+      padding:20px;
+      background:var(--bg);
+    }
+    .pin-card{
+      width:min(420px,100%);padding:24px;border-radius:12px;
+      border:1px solid var(--border);background:var(--card);box-shadow:var(--shadow);
+    }
+    .pin-card h1{font-size:24px}
+    .pin-card form{display:grid;gap:12px;margin-top:16px}
+    .pin-card label{display:grid;gap:7px;color:var(--muted);font-size:12px;font-weight:800}
+    .pin-card input{
+      width:100%;padding:13px 12px;border-radius:8px;border:1px solid var(--border);
+      background:transparent;color:var(--text);outline:none;font-size:18px;font-weight:900;
+      text-transform:uppercase;letter-spacing:.12em;
+    }
+    .pin-card input:focus,.search input:focus,.btn:focus-visible{
+      border-color:var(--accent);
+      box-shadow:0 0 0 3px var(--focus);
+    }
+    .pin-error{min-height:18px;color:var(--bad);font-size:12px;font-weight:800}
+    .sr-only{
+      position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;
+      clip:rect(0,0,0,0);white-space:nowrap;border:0;
+    }
+  </style>
+</head>
+<body>
+  <div id="pinGate" class="pin-gate">
+    <div class="pin-card" role="dialog" aria-labelledby="pinTitle" aria-modal="true">
+      <div class="title-row">
+        <h1 id="pinTitle">Consulta de CNPJ</h1>
+        <span class="version-pill" id="pinVersion">v1.3.0</span>
+      </div>
+      <div class="sub">Acesso restrito por PIN.</div>
+      <form id="pinForm">
+        <input class="sr-only" type="text" autocomplete="username" value="consulta-cnpj" tabindex="-1" aria-hidden="true" />
+        <label for="pinInput">
+          PIN
+          <input id="pinInput" type="password" autocomplete="current-password" inputmode="text" maxlength="24" />
+        </label>
+        <button id="btnPin" class="btn" type="submit">Entrar</button>
+        <div id="pinError" class="pin-error" role="alert" aria-live="polite"></div>
+      </form>
+    </div>
+  </div>
+
+  <div id="appShell" class="wrap" hidden>
+    <header>
+      <div>
+        <div class="title-row">
+          <h1>Consulta de CNPJ</h1>
+          <span class="version-pill" id="appVersion">v1.3.0</span>
+        </div>
+        <div id="sourceSubtitle" class="sub">Consulta por CNPJ com dados mesclados da <b>ReceitaWS</b> e da <b>API Publica CNPJ.ws</b>, com destaque para Simples Nacional, SIMEI/MEI e Receita Estadual.</div>
+      </div>
+      <div class="theme-control">
+        <label for="themeSelect">Tema</label>
+        <select id="themeSelect" class="theme-select" aria-label="Tema da interface">
+          <option value="system">Sistema</option>
+          <option value="light">Claro</option>
+          <option value="dark">Escuro</option>
+        </select>
+        <div class="hint">
+          URL compartilhável:
+          <a id="shareLink" class="chip" href="?cnpj=00000000000000">?cnpj=00000000000000</a>
+        </div>
+      </div>
+    </header>
+
+    <div class="card search">
+      <input id="cnpj" inputmode="numeric" autocomplete="off" placeholder="Digite o CNPJ (somente números ou com máscara)" />
+      <button id="btnSearch" class="btn">Consultar</button>
+      <button id="btnClear" class="btn secondary">Limpar</button>
+      <div class="row">
+        <label class="hint"><input id="chkNoCache" type="checkbox" /> Ignorar cache local e Worker</label>
+        <span class="hint" id="cooldownHint"></span>
+      </div>
+    </div>
+
+    <div id="out"></div>
+  </div>
+
+  <div id="toast" class="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    (function () {
+      const APP_VERSION = "1.3.0";
+      const IS_FILE_MODE = location.protocol === "file:";
+      const LOCAL_STANDALONE_PIN = "JULI";
+      const RECEITAWS_JSONP_BASE = "https://www.receitaws.com.br/v1/cnpj/";
+      const API_BASE = "/api/cnpj?cnpj=";
+      const AUTH_URL = "/api/auth";
+      const CACHE_TTL_MS = 24 * 60 * 60 * 1000;
+      const COOLDOWN_MS = 3000;
+      const STORAGE_PREFIX = "cnpj_merged_cache_v1:";
+      const PIN_STORAGE_KEY = "receitaws_access_pin_v1";
+      const THEME_STORAGE_KEY = "receitaws_theme_v1";
+
+      const $ = (id) => document.getElementById(id);
+
+      const pinGate = $("pinGate");
+      const appShell = $("appShell");
+      const pinForm = $("pinForm");
+      const pinInput = $("pinInput");
+      const btnPin = $("btnPin");
+      const pinError = $("pinError");
+      const appVersion = $("appVersion");
+      const pinVersion = $("pinVersion");
+      const cnpjInput = $("cnpj");
+      const btnSearch = $("btnSearch");
+      const btnClear = $("btnClear");
+      const out = $("out");
+      const chkNoCache = $("chkNoCache");
+      const cooldownHint = $("cooldownHint");
+      const toast = $("toast");
+      const shareLink = $("shareLink");
+      const themeSelect = $("themeSelect");
+      const sourceSubtitle = $("sourceSubtitle");
+
+      let lastRequestAt = 0;
+      let lastData = null;
+      let accessPin = "";
+
+      appVersion.textContent = "v" + APP_VERSION;
+      pinVersion.textContent = "v" + APP_VERSION;
+      sourceSubtitle.innerHTML = IS_FILE_MODE
+        ? "Modo direto: consulta apenas a <b>ReceitaWS</b> via JSONP. Para mesclar com a <b>API Publica CNPJ.ws</b>, use o Worker."
+        : "Consulta por CNPJ com dados mesclados da <b>ReceitaWS</b> e da <b>API Publica CNPJ.ws</b>, com destaque para Simples Nacional, SIMEI/MEI e Receita Estadual.";
+
+      function applyTheme(mode) {
+        const normalized = mode === "light" || mode === "dark" ? mode : "system";
+        if (normalized === "system") document.documentElement.removeAttribute("data-theme");
+        else document.documentElement.setAttribute("data-theme", normalized);
+        if (themeSelect) themeSelect.value = normalized;
+        try { localStorage.setItem(THEME_STORAGE_KEY, normalized); } catch {}
+      }
+
+      function initTheme() {
+        let saved = "system";
+        try { saved = localStorage.getItem(THEME_STORAGE_KEY) || "system"; } catch {}
+        applyTheme(saved);
+      }
+
+      function showToast(msg) {
+        toast.textContent = msg;
+        toast.classList.add("show");
+        setTimeout(() => toast.classList.remove("show"), 1800);
+      }
+
+      function setPinLoading(isLoading) {
+        btnPin.disabled = isLoading;
+        pinInput.disabled = isLoading;
+        btnPin.textContent = isLoading ? "Verificando..." : "Entrar";
+      }
+
+      function showPinGate(message) {
+        accessPin = "";
+        try { sessionStorage.removeItem(PIN_STORAGE_KEY); } catch {}
+        appShell.hidden = true;
+        pinGate.hidden = false;
+        pinError.textContent = message || "";
+        setTimeout(() => pinInput.focus(), 0);
+      }
+
+      function unlockApp(pin) {
+        accessPin = String(pin || "").trim();
+        try { sessionStorage.setItem(PIN_STORAGE_KEY, accessPin); } catch {}
+        pinGate.hidden = true;
+        appShell.hidden = false;
+        pinError.textContent = "";
+        setTimeout(() => cnpjInput.focus(), 0);
+      }
+
+      async function validatePin(pin) {
+        if (IS_FILE_MODE) {
+          return normalizePin(pin) === LOCAL_STANDALONE_PIN;
+        }
+
+        const resp = await fetch(AUTH_URL, {
+          method: "GET",
+          headers: {
+            "Accept": "application/json",
+            "X-Access-Pin": pin
+          }
+        });
+
+        if (!resp.ok) return false;
+
+        const data = await resp.json().catch(() => null);
+        return !!data && String(data.status || "").toUpperCase() === "OK";
+      }
+
+      function normalizePin(value) {
+        return String(value || "").trim().toUpperCase();
+      }
+
+      async function handlePinSubmit(e) {
+        e.preventDefault();
+        const pin = pinInput.value.trim();
+        if (!pin) {
+          pinError.textContent = "Informe o PIN.";
+          pinInput.focus();
+          return;
+        }
+
+        setPinLoading(true);
+        pinError.textContent = "";
+
+        try {
+          const ok = await validatePin(pin);
+          if (!ok) {
+            showPinGate("PIN inválido.");
+            pinInput.select();
+            return;
+          }
+          unlockApp(pin);
+          await runInitialSearchIfNeeded();
+        } catch {
+          pinError.textContent = "Não foi possível validar o PIN.";
+        } finally {
+          setPinLoading(false);
+        }
+      }
+
+      function onlyDigits(s) { return String(s || "").replace(/\D+/g, ""); }
+
+      function formatCNPJ(d) {
+        const x = onlyDigits(d);
+        if (x.length !== 14) return d;
+        return x.replace(/^(\d{2})(\d{3})(\d{3})(\d{4})(\d{2})$/, "$1.$2.$3/$4-$5");
+      }
+
+      function parseISOorBRDate(s) {
+        if (!s) return "—";
+        if (/^\d{2}\/\d{2}\/\d{4}$/.test(s)) return s;
+        const d = new Date(s);
+        if (!isNaN(d.getTime())) return d.toLocaleString("pt-BR");
+        return String(s);
+      }
+
+      function textOrDash(s) {
+        const t = String(s ?? "").trim();
+        return t ? t : "—";
+      }
+
+      function escapeHtml(s) {
+        return String(s ?? "").replace(/[&<>"']/g, (m) => ({
+          "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+        }[m]));
+      }
+
+      function cnpjIsValid(cnpjDigits) {
+        const cnpj = onlyDigits(cnpjDigits);
+        if (cnpj.length !== 14) return false;
+        if (/^(\d)\1+$/.test(cnpj)) return false;
+
+        const calcDV = (base) => {
+          const weights = base.length === 12
+            ? [5,4,3,2,9,8,7,6,5,4,3,2]
+            : [6,5,4,3,2,9,8,7,6,5,4,3,2];
+          let sum = 0;
+          for (let i = 0; i < weights.length; i++) sum += Number(base[i]) * weights[i];
+          const mod = sum % 11;
+          return (mod < 2) ? 0 : (11 - mod);
+        };
+
+        const dv1 = calcDV(cnpj.slice(0, 12));
+        const dv2 = calcDV(cnpj.slice(0, 12) + dv1);
+        return cnpj.endsWith(String(dv1) + String(dv2));
+      }
+
+      function cacheKey(cnpjDigits) { return STORAGE_PREFIX + onlyDigits(cnpjDigits); }
+
+      function getCached(cnpjDigits) {
+        try {
+          const raw = localStorage.getItem(cacheKey(cnpjDigits));
+          if (!raw) return null;
+          const obj = JSON.parse(raw);
+          if (!obj || !obj.at || !obj.data) return null;
+          if (Date.now() - obj.at > CACHE_TTL_MS) return null;
+          return obj.data;
+        } catch { return null; }
+      }
+
+      function setCached(cnpjDigits, data) {
+        try {
+          localStorage.setItem(cacheKey(cnpjDigits), JSON.stringify({ at: Date.now(), data }));
+        } catch {}
+      }
+
+      function setCooldownHint() {
+        const remain = Math.max(0, COOLDOWN_MS - (Date.now() - lastRequestAt));
+        if (remain <= 0) { cooldownHint.textContent = ""; return; }
+        cooldownHint.textContent = "Aguarde " + (remain / 1000).toFixed(1) + "s para nova consulta";
+        setTimeout(setCooldownHint, 120);
+      }
+
+      function updateShareLink(digits) {
+        const url = new URL(location.href);
+        if (digits && digits.length === 14) url.searchParams.set("cnpj", digits);
+        else url.searchParams.delete("cnpj");
+        shareLink.href = url.toString();
+        const q = url.searchParams.get("cnpj");
+        shareLink.textContent = q ? ("?cnpj=" + q) : "?cnpj=00000000000000";
+      }
+
+      function pillEl(status, label) {
+        const span = document.createElement("span");
+        span.className = "pill";
+        const dot = document.createElement("span");
+        dot.className = "dot " + (status === "ok" ? "ok" : status === "bad" ? "bad" : "warn");
+        span.appendChild(dot);
+        span.appendChild(document.createTextNode(label));
+        return span;
+      }
+
+      function chipEl(text) {
+        const s = document.createElement("span");
+        s.className = "chip";
+        s.textContent = text;
+        return s;
+      }
+
+      function kvEl(key, valueNodeOrText) {
+        const row = document.createElement("div");
+        row.className = "kv";
+
+        const k = document.createElement("div");
+        k.className = "k";
+        k.textContent = key;
+
+        const v = document.createElement("div");
+        v.className = "v";
+        if (valueNodeOrText instanceof Node) v.appendChild(valueNodeOrText);
+        else v.textContent = valueNodeOrText;
+
+        row.appendChild(k);
+        row.appendChild(v);
+        return row;
+      }
+
+      function chipsFromActivities(arr) {
+        const wrap = document.createElement("div");
+        wrap.className = "chips";
+        if (!Array.isArray(arr) || arr.length === 0) {
+          wrap.appendChild(document.createTextNode("—"));
+          return wrap;
+        }
+        for (const a of arr) {
+          const t = (a && (a.text || a.code))
+            ? (String(a.code || "") + (a.code ? " — " : "") + String(a.text || "")).trim()
+            : JSON.stringify(a);
+
+          const c = document.createElement("span");
+          c.className = "chip";
+          c.textContent = t;
+          wrap.appendChild(c);
+        }
+        return wrap;
+      }
+
+      function stateRegistrationText(item) {
+        const parts = [
+          item?.inscricao_estadual,
+          item?.uf || item?.estado,
+          item?.ativo === false ? "Inativa" : "Ativa",
+          item?.atualizado_em ? ("Atualizada em " + parseISOorBRDate(item.atualizado_em)) : ""
+        ].filter(Boolean);
+        return parts.length ? parts.join(" — ") : "—";
+      }
+
+      function chipsFromStateRegistrations(arr) {
+        const wrap = document.createElement("div");
+        wrap.className = "chips";
+        if (!Array.isArray(arr) || arr.length === 0) {
+          wrap.appendChild(document.createTextNode("—"));
+          return wrap;
+        }
+        for (const item of arr) wrap.appendChild(chipEl(stateRegistrationText(item)));
+        return wrap;
+      }
+
+      function sourceStatusText(source) {
+        if (!source) return "—";
+        const status = source.status === "ok" ? "OK" : "Erro";
+        const updated = source.atualizado_em ? " — atualizado em " + parseISOorBRDate(source.atualizado_em) : "";
+        const err = source.erro ? " — " + source.erro : "";
+        return (source.fonte || "Fonte") + ": " + status + updated + err;
+      }
+
+      function sourceBlockText(name, block) {
+        const labels = {
+          empresa: "Empresa",
+          estabelecimento: "Estabelecimento",
+          regimes: "Regimes",
+          qsa: "QSA",
+          receita_estadual: "Receita Estadual"
+        };
+        const updated = block?.atualizado_em ? " — " + parseISOorBRDate(block.atualizado_em) : "";
+        return (labels[name] || name) + ": " + textOrDash(block?.fonte) + updated;
+      }
+
+      function sourcesSummaryEl(fontes) {
+        const wrap = document.createElement("div");
+        wrap.className = "chips";
+
+        if (!fontes) {
+          wrap.appendChild(chipEl(IS_FILE_MODE ? "Fonte: ReceitaWS via JSONP" : "Fonte: API do Worker"));
+          return wrap;
+        }
+
+        wrap.appendChild(chipEl(sourceStatusText(fontes.receitaws)));
+        wrap.appendChild(chipEl(sourceStatusText(fontes.cnpjws)));
+
+        if (Array.isArray(fontes.avisos) && fontes.avisos.length) {
+          for (const aviso of fontes.avisos) wrap.appendChild(chipEl("Aviso: " + aviso));
+        }
+
+        return wrap;
+      }
+
+      function sourceDetailsEl(fontes) {
+        const wrap = document.createElement("div");
+        wrap.className = "chips";
+
+        if (!fontes?.blocos) {
+          wrap.appendChild(document.createTextNode("—"));
+          return wrap;
+        }
+
+        for (const [name, block] of Object.entries(fontes.blocos)) {
+          wrap.appendChild(chipEl(sourceBlockText(name, block)));
+        }
+
+        return wrap;
+      }
+
+      function downloadText(filename, text, mime) {
+        const blob = new Blob([text], { type: mime || "text/plain;charset=utf-8" });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => {
+          URL.revokeObjectURL(a.href);
+          a.remove();
+        }, 0);
+      }
+
+      function generateMarkdown(data) {
+        const digits = onlyDigits(data?.cnpj || "");
+        const cnpjFmt = formatCNPJ(digits);
+        const updated = parseISOorBRDate(data?.ultima_atualizacao);
+
+        const simplesOpt = !!data?.simples?.optante;
+        const simeiOpt = !!data?.simei?.optante;
+
+        const endereco = [
+          data?.logradouro, data?.numero, data?.complemento,
+          data?.bairro, data?.municipio, data?.uf, data?.cep
+        ].filter(Boolean).join(", ");
+
+        const lines = [];
+        lines.push("# Relatório CNPJ — " + (cnpjFmt || "—"));
+        lines.push("");
+        lines.push("- **Nome:** " + (data?.nome || "—"));
+        lines.push("- **Fantasia:** " + (data?.fantasia || "—"));
+        lines.push("- **Situação:** " + (data?.situacao || "—") + " (" + (data?.data_situacao || "—") + ")");
+        lines.push("- **Natureza jurídica:** " + (data?.natureza_juridica || "—"));
+        lines.push("- **Porte:** " + (data?.porte || "—"));
+        lines.push("- **Abertura:** " + (data?.abertura || "—"));
+        lines.push("- **Capital social:** " + (data?.capital_social || "—"));
+        lines.push("- **Atualizado em:** " + updated);
+        lines.push("");
+        lines.push("## Regimes");
+        lines.push("- **Simples Nacional:** " + (simplesOpt ? "SIM" : "NÃO"));
+        lines.push("  - Opção: " + (data?.simples?.data_opcao || "—"));
+        lines.push("  - Exclusão: " + (data?.simples?.data_exclusao || "—"));
+        lines.push("  - Últ. atualização: " + parseISOorBRDate(data?.simples?.ultima_atualizacao));
+        lines.push("- **SIMEI/MEI:** " + (simeiOpt ? "SIM" : "NÃO"));
+        lines.push("  - Opção: " + (data?.simei?.data_opcao || "—"));
+        lines.push("  - Exclusão: " + (data?.simei?.data_exclusao || "—"));
+        lines.push("  - Últ. atualização: " + parseISOorBRDate(data?.simei?.ultima_atualizacao));
+        lines.push("");
+        lines.push("## Receita Estadual");
+        if (Array.isArray(data?.inscricoes_estaduais) && data.inscricoes_estaduais.length) {
+          for (const item of data.inscricoes_estaduais) lines.push("- " + stateRegistrationText(item));
+        } else lines.push("- —");
+        lines.push("");
+        lines.push("## Endereço e contato");
+        lines.push("- **Endereço:** " + (endereco || "—"));
+        lines.push("- **Telefone:** " + (data?.telefone || "—"));
+        lines.push("- **E-mail:** " + (data?.email || "—"));
+        lines.push("");
+        lines.push("## CNAE");
+        lines.push("**Principal:**");
+        if (Array.isArray(data?.atividade_principal) && data.atividade_principal.length){
+          for (const a of data.atividade_principal) {
+            const t = (a.code ? a.code + " — " : "") + (a.text || "");
+            lines.push("- " + t.trim());
+          }
+        } else lines.push("- —");
+        lines.push("");
+        lines.push("**Secundárias:**");
+        if (Array.isArray(data?.atividades_secundarias) && data.atividades_secundarias.length){
+          for (const a of data.atividades_secundarias) {
+            const t = (a.code ? a.code + " — " : "") + (a.text || "");
+            lines.push("- " + t.trim());
+          }
+        } else lines.push("- —");
+        lines.push("");
+        lines.push("## QSA");
+        if (Array.isArray(data?.qsa) && data.qsa.length){
+          for (const p of data.qsa) lines.push("- " + (p?.nome || "—") + " — " + (p?.qual || "—"));
+        } else lines.push("- —");
+        lines.push("");
+        lines.push("## Fontes");
+        if (data?._fontes) {
+          lines.push("- " + sourceStatusText(data._fontes.receitaws));
+          lines.push("- " + sourceStatusText(data._fontes.cnpjws));
+          if (data._fontes.blocos) {
+            for (const [name, block] of Object.entries(data._fontes.blocos)) {
+              lines.push("- " + sourceBlockText(name, block));
+            }
+          }
+          if (Array.isArray(data._fontes.avisos) && data._fontes.avisos.length) {
+            for (const aviso of data._fontes.avisos) lines.push("- Aviso: " + aviso);
+          }
+        } else {
+          lines.push("- " + (IS_FILE_MODE ? "ReceitaWS via JSONP" : "API do Worker"));
+        }
+
+        return lines.join("\n");
+      }
+
+      function openPrintWindow(data) {
+        const digits = onlyDigits(data?.cnpj || "");
+        const cnpjFmt = formatCNPJ(digits);
+        const updated = parseISOorBRDate(data?.ultima_atualizacao);
+        const generatedAt = new Date().toLocaleString("pt-BR");
+
+        const simplesOpt = !!data?.simples?.optante;
+        const simeiOpt = !!data?.simei?.optante;
+        const status = textOrDash(data?.situacao);
+        const statusClass = status.toUpperCase() === "ATIVA" ? "ok" : "warn";
+
+        const endereco = [
+          data?.logradouro, data?.numero, data?.complemento,
+          data?.bairro, data?.municipio, data?.uf, data?.cep
+        ].filter(Boolean).join(", ");
+
+        const row = (key, value) =>
+          `<tr><th>${escapeHtml(key)}</th><td>${escapeHtml(textOrDash(value))}</td></tr>`;
+
+        const rows = (items) => items.map(([key, value]) => row(key, value)).join("");
+
+        const list = (arr) => {
+          if (!Array.isArray(arr) || arr.length === 0) return "<li>—</li>";
+          return arr.map(a => {
+            const t = (a && (a.text || a.code))
+              ? ((a.code ? a.code + " — " : "") + (a.text || "")).trim()
+              : JSON.stringify(a);
+            return "<li>" + escapeHtml(t) + "</li>";
+          }).join("");
+        };
+
+        const qsaList = (() => {
+          const arr = Array.isArray(data?.qsa) ? data.qsa : [];
+          if (arr.length === 0) return "<li>—</li>";
+          return arr.map(p => "<li>" + escapeHtml(p?.nome || "—") + " — " + escapeHtml(p?.qual || "—") + "</li>").join("");
+        })();
+
+        const ieList = (() => {
+          const arr = Array.isArray(data?.inscricoes_estaduais) ? data.inscricoes_estaduais : [];
+          if (arr.length === 0) return "<li>—</li>";
+          return arr.map(item => "<li>" + escapeHtml(stateRegistrationText(item)) + "</li>").join("");
+        })();
+
+        const sourceList = (() => {
+          const items = [];
+          if (data?._fontes) {
+            items.push(sourceStatusText(data._fontes.receitaws));
+            items.push(sourceStatusText(data._fontes.cnpjws));
+            if (data._fontes.blocos) {
+              for (const [name, block] of Object.entries(data._fontes.blocos)) items.push(sourceBlockText(name, block));
+            }
+            if (Array.isArray(data._fontes.avisos)) {
+              for (const aviso of data._fontes.avisos) items.push("Aviso: " + aviso);
+            }
+          } else {
+            items.push(IS_FILE_MODE ? "ReceitaWS via JSONP" : "API do Worker");
+          }
+          return items.length ? items.map(item => "<li>" + escapeHtml(item) + "</li>").join("") : "<li>—</li>";
+        })();
+
+        const reportSourceFooter = data?._fontes
+          ? "Fontes: ReceitaWS e API Publica CNPJ.ws. Dados sujeitos à disponibilidade e atualização das fontes."
+          : "Fonte: ReceitaWS. Dados sujeitos à disponibilidade e atualização da fonte.";
+
+        const companyName = data?.nome || data?.fantasia || "Empresa";
+        const html =
+`<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Relatório CNPJ ${escapeHtml(cnpjFmt || "")}</title>
+<style>
+  @page{size:A4;margin:9mm}
+  *{box-sizing:border-box}
+  body{margin:0;background:#F9FAFB;color:#1D2939;font-family:Segoe UI,Roboto,Arial,sans-serif;font-size:12px;line-height:1.28}
+  .report{max-width:210mm;margin:0 auto;background:#FFFFFF;padding:14px 16px 12px}
+  .topbar{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;border-bottom:2px solid #155E75;padding-bottom:8px}
+  .eyebrow{font-size:12px;text-transform:uppercase;letter-spacing:.08em;color:#667085;font-weight:900}
+  h1{margin:2px 0 3px;font-size:18px;line-height:1.12;color:#1D2939}
+  .topbar p{margin:0;font-size:12px;color:#667085}
+  .docmeta{text-align:right;font-size:12px;color:#667085;min-width:132px}
+  .docmeta b{display:block;color:#155E75;font-size:12px;margin-bottom:2px}
+  .summary{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:8px 0}
+  .metric{border:1px solid #D0D5DD;border-left:4px solid #155E75;border-radius:6px;padding:7px;background:#FFFFFF}
+  .metric .label{font-size:12px;text-transform:uppercase;letter-spacing:.06em;color:#667085;font-weight:900}
+  .metric .value{font-size:14px;font-weight:900;margin-top:2px;color:#1D2939}
+  .value.ok{color:#039855}.value.warn{color:#F79009}.value.bad{color:#D92D20}
+  .sections{display:grid;grid-template-columns:1fr 1fr;gap:7px;align-items:start}
+  .section{border:1px solid #D0D5DD;border-radius:6px;overflow:hidden;break-inside:avoid;background:#FFFFFF}
+  .section.full{grid-column:1/-1}
+  .section h2{margin:0;padding:6px 8px;background:#F2F4F7;color:#1D2939;font-size:12px;text-transform:uppercase;letter-spacing:.06em}
+  .section-body{padding:5px 8px}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  table{width:100%;border-collapse:collapse}
+  th,td{vertical-align:top;text-align:left;border-bottom:1px solid #EAECF0;padding:3px 0;font-size:12px}
+  th{width:34%;padding-right:8px;color:#667085;font-weight:800}
+  tr:last-child th,tr:last-child td{border-bottom:0}
+  strong{display:block;margin-bottom:2px;color:#1D2939;font-size:12px}
+  ul{margin:0;padding-left:14px}
+  li{margin:1px 0;font-size:12px}
+  footer{margin-top:7px;padding-top:6px;border-top:1px solid #EAECF0;color:#667085;font-size:12px;display:flex;justify-content:space-between;gap:10px}
+  @media print{body{background:#fff}.report{max-width:none;padding:0}.section{page-break-inside:avoid}}
+  @media (max-width:760px){.report{padding:14px}.topbar,.grid,footer{display:block}.docmeta{text-align:left;margin-top:8px}.summary,.sections{grid-template-columns:1fr}.section.full{grid-column:auto}}
+</style>
+</head>
+<body>
+  <main class="report">
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">Relatório CNPJ</div>
+        <h1>${escapeHtml(companyName)}</h1>
+        <p>CNPJ ${escapeHtml(cnpjFmt || "—")} • Atualizado em ${escapeHtml(updated)}</p>
+      </div>
+      <div class="docmeta"><b>v${escapeHtml(APP_VERSION)}</b>Gerado em<br>${escapeHtml(generatedAt)}</div>
+    </header>
+
+    <section class="summary">
+      <div class="metric"><div class="label">Situação</div><div class="value ${statusClass}">${escapeHtml(status)}</div></div>
+      <div class="metric"><div class="label">Simples Nacional</div><div class="value ${simplesOpt ? "ok" : "bad"}">${simplesOpt ? "SIM" : "NÃO"}</div></div>
+      <div class="metric"><div class="label">SIMEI / MEI</div><div class="value ${simeiOpt ? "ok" : "warn"}">${simeiOpt ? "SIM" : "NÃO"}</div></div>
+    </section>
+
+    <div class="sections">
+      <section class="section full">
+        <h2>Identificação</h2>
+        <div class="section-body grid">
+          <table><tbody>${rows([
+            ["Nome", data?.nome],
+            ["Fantasia", data?.fantasia],
+            ["Tipo", data?.tipo],
+            ["Porte", data?.porte],
+            ["Natureza jurídica", data?.natureza_juridica]
+          ])}</tbody></table>
+          <table><tbody>${rows([
+            ["Abertura", data?.abertura],
+            ["Capital social", data?.capital_social],
+            ["Data situação", data?.data_situacao],
+            ["Motivo situação", data?.motivo_situacao],
+            ["Situação especial", data?.situacao_especial]
+          ])}</tbody></table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Regimes tributários</h2>
+        <div class="section-body">
+          <table><tbody>${rows([
+            ["Simples - opção", data?.simples?.data_opcao],
+            ["Simples - exclusão", data?.simples?.data_exclusao],
+            ["Simples - atualização", parseISOorBRDate(data?.simples?.ultima_atualizacao)],
+            ["SIMEI - opção", data?.simei?.data_opcao],
+            ["SIMEI - exclusão", data?.simei?.data_exclusao],
+            ["SIMEI - atualização", parseISOorBRDate(data?.simei?.ultima_atualizacao)]
+          ])}</tbody></table>
+        </div>
+      </section>
+
+      <section class="section">
+        <h2>Receita Estadual</h2>
+        <div class="section-body"><ul>${ieList}</ul></div>
+      </section>
+
+      <section class="section">
+        <h2>Endereço e contato</h2>
+        <div class="section-body">
+          <table><tbody>${rows([
+            ["Endereço", endereco],
+            ["Município/UF", textOrDash(data?.municipio) + " / " + textOrDash(data?.uf)],
+            ["CEP", data?.cep],
+            ["Telefone", data?.telefone],
+            ["E-mail", data?.email]
+          ])}</tbody></table>
+        </div>
+      </section>
+
+      <section class="section full">
+        <h2>Atividades econômicas</h2>
+        <div class="section-body grid">
+          <div><strong>CNAE principal</strong><ul>${list(Array.isArray(data?.atividade_principal) ? data.atividade_principal : [])}</ul></div>
+          <div><strong>CNAEs secundários</strong><ul>${list(Array.isArray(data?.atividades_secundarias) ? data.atividades_secundarias : [])}</ul></div>
+        </div>
+      </section>
+
+      <section class="section full">
+        <h2>QSA</h2>
+        <div class="section-body"><ul>${qsaList}</ul></div>
+      </section>
+
+      <section class="section full">
+        <h2>Fontes</h2>
+        <div class="section-body"><ul>${sourceList}</ul></div>
+      </section>
+    </div>
+
+    <footer>
+      <span>${escapeHtml(reportSourceFooter)}</span>
+      <span>Consulta de CNPJ v${escapeHtml(APP_VERSION)}</span>
+    </footer>
+  </main>
+</body>
+</html>`;
+
+        printHtmlDocument(html);
+      }
+
+      function printHtmlDocument(html) {
+        const w = window.open("", "_blank");
+        if (w) {
+          w.document.open();
+          w.document.write(html);
+          w.document.close();
+          setTimeout(() => {
+            try {
+              w.focus();
+              w.print();
+            } catch {
+              showToast("Abra a janela do relatório e use Ctrl+P.");
+            }
+          }, 350);
+          return;
+        }
+
+        const frame = document.createElement("iframe");
+        frame.style.position = "fixed";
+        frame.style.right = "0";
+        frame.style.bottom = "0";
+        frame.style.width = "0";
+        frame.style.height = "0";
+        frame.style.border = "0";
+        frame.setAttribute("aria-hidden", "true");
+        document.body.appendChild(frame);
+
+        const doc = frame.contentWindow.document;
+        doc.open();
+        doc.write(html);
+        doc.close();
+
+        setTimeout(() => {
+          try {
+            frame.contentWindow.focus();
+            frame.contentWindow.print();
+            showToast("Relatório enviado para impressão.");
+          } catch {
+            showToast("Popup bloqueado pelo navegador.");
+          }
+          setTimeout(() => frame.remove(), 1200);
+        }, 350);
+      }
+
+      function fetchReceitaWSJsonp(cnpjDigits) {
+        return new Promise((resolve, reject) => {
+          const callbackName = "__receitaWsCallback_" + Date.now() + "_" + Math.floor(Math.random() * 1000000);
+          const script = document.createElement("script");
+          let settled = false;
+
+          const cleanup = () => {
+            settled = true;
+            delete window[callbackName];
+            script.remove();
+            clearTimeout(timer);
+          };
+
+          const timer = setTimeout(() => {
+            if (settled) return;
+            cleanup();
+            reject(new Error("Tempo esgotado ao consultar a ReceitaWS."));
+          }, 20000);
+
+          window[callbackName] = (data) => {
+            if (settled) return;
+            cleanup();
+            resolve(data);
+          };
+
+          script.onerror = () => {
+            if (settled) return;
+            cleanup();
+            reject(new Error("Falha ao consultar a ReceitaWS."));
+          };
+
+          script.src = RECEITAWS_JSONP_BASE + onlyDigits(cnpjDigits) + "?callback=" + callbackName;
+          document.head.appendChild(script);
+        });
+      }
+
+      async function fetchCNPJ(cnpjDigits, opts) {
+        const digits = onlyDigits(cnpjDigits);
+        const noCache = !!(opts && opts.noCache);
+
+        if (!cnpjIsValid(digits)) throw new Error("CNPJ inválido. Verifique os dígitos.");
+
+        const now = Date.now();
+        if (now - lastRequestAt < COOLDOWN_MS) {
+          setCooldownHint();
+          throw new Error("Aguarde alguns segundos antes de consultar novamente.");
+        }
+
+        if (!noCache) {
+          const cached = getCached(digits);
+          if (cached) return { data: cached, fromCache: true };
+        }
+
+        lastRequestAt = now;
+        setCooldownHint();
+
+        if (IS_FILE_MODE) {
+          const data = await fetchReceitaWSJsonp(digits);
+
+          if (!data) throw new Error("A ReceitaWS retornou uma resposta inválida.");
+
+          if (data.status && String(data.status).toUpperCase() !== "OK") {
+            throw new Error(data.message || data.motivo || "A API retornou erro.");
+          }
+
+          setCached(digits, data);
+          return { data, fromCache: false };
+        }
+
+        const url = API_BASE + digits + (noCache ? "&nocache=1" : "");
+
+        let resp;
+        try {
+          resp = await fetch(url, {
+            method: "GET",
+            headers: {
+              "Accept": "application/json",
+              "X-Access-Pin": accessPin
+            }
+          });
+        } catch {
+          throw new Error("Falha ao chamar a API (rede).");
+        }
+
+        if (resp.status === 401) {
+          showPinGate("Sessão expirada. Informe o PIN novamente.");
+          throw new Error("PIN inválido.");
+        }
+
+        const data = await resp.json().catch(() => null);
+
+        if (!resp.ok) {
+          const message = data?.message || data?.error || data?.detail || ("HTTP " + resp.status + " ao consultar a API.");
+          throw new Error(message);
+        }
+
+        if (!data) throw new Error("A API retornou uma resposta inválida.");
+
+        if (data && data.status && String(data.status).toUpperCase() !== "OK") {
+          throw new Error(data.message || data.motivo || "A API retornou erro.");
+        }
+
+        setCached(digits, data);
+        return { data, fromCache: false };
+      }
+
+      function setLoading(isLoading) {
+        btnSearch.disabled = isLoading;
+        btnClear.disabled = isLoading;
+        cnpjInput.disabled = isLoading;
+        btnSearch.textContent = isLoading ? "Consultando..." : "Consultar";
+      }
+
+      function renderError(title, detail) {
+        out.innerHTML = "";
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        const left = document.createElement("div");
+        left.className = "card panel errbox";
+        left.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Erro" }));
+        left.appendChild(Object.assign(document.createElement("div"), { style:"font-size:16px;font-weight:900", textContent:title }));
+        left.appendChild(Object.assign(document.createElement("div"), { className:"small", style:"margin-top:6px", textContent: detail || "" }));
+
+        const right = document.createElement("div");
+        right.className = "card panel";
+        right.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Depuração" }));
+        right.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Abra o console do navegador (F12) para detalhes." }));
+
+        grid.appendChild(left);
+        grid.appendChild(right);
+        out.appendChild(grid);
+      }
+
+      function renderData(data) {
+        lastData = data;
+        out.innerHTML = "";
+
+        const digits = onlyDigits(data?.cnpj || "");
+        updateShareLink(digits);
+
+        const heroName = data?.nome || data?.fantasia || "Empresa";
+        const cnpjFmt = formatCNPJ(digits || "");
+        const updated = parseISOorBRDate(data?.ultima_atualizacao);
+
+        const situ = String(data?.situacao || "").trim();
+        const situPill = pillEl(situ.toUpperCase() === "ATIVA" ? "ok" : "warn", "Situação: " + (situ || "—"));
+
+        const simplesOpt = !!data?.simples?.optante;
+        const simeiOpt = !!data?.simei?.optante;
+
+        const simplesPill = pillEl(simplesOpt ? "ok" : "bad", "Simples Nacional: " + (simplesOpt ? "SIM" : "NÃO"));
+        const simeiPill = pillEl(simeiOpt ? "ok" : "warn", "SIMEI/MEI: " + (simeiOpt ? "SIM" : "NÃO"));
+
+        const endereco = [
+          data?.logradouro, data?.numero, data?.complemento,
+          data?.bairro, data?.municipio, data?.uf, data?.cep
+        ].filter(Boolean).join(", ");
+
+        const grid = document.createElement("div");
+        grid.className = "grid";
+
+        const hero = document.createElement("div");
+        hero.className = "card panel hero";
+        hero.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Visão geral" }));
+        hero.appendChild(Object.assign(document.createElement("h2"), { textContent: heroName }));
+
+        const meta = document.createElement("div");
+        meta.className = "meta";
+        meta.appendChild(chipEl("CNPJ: " + (cnpjFmt || "—")));
+        meta.appendChild(chipEl("Atualizado em: " + updated));
+        hero.appendChild(meta);
+
+        const badges = document.createElement("div");
+        badges.className = "badges";
+
+        const b1 = document.createElement("div");
+        b1.className = "badge";
+        b1.appendChild(Object.assign(document.createElement("div"), { className:"k", textContent:"Status" }));
+        const b1v = document.createElement("div");
+        b1v.className = "v"; b1v.appendChild(situPill);
+        b1.appendChild(b1v);
+        b1.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Data situação: " + textOrDash(data?.data_situacao) }));
+        b1.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Motivo situação: " + textOrDash(data?.motivo_situacao) }));
+
+        const b2 = document.createElement("div");
+        b2.className = "badge";
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"k", textContent:"Regime tributário" }));
+        const b2v = document.createElement("div");
+        b2v.className = "v"; b2v.appendChild(simplesPill);
+        b2.appendChild(b2v);
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Opção: " + textOrDash(data?.simples?.data_opcao) }));
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Exclusão: " + textOrDash(data?.simples?.data_exclusao) }));
+        b2.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Últ. atualização: " + parseISOorBRDate(data?.simples?.ultima_atualizacao) }));
+
+        const b3 = document.createElement("div");
+        b3.className = "badge";
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"k", textContent:"MEI / SIMEI" }));
+        const b3v = document.createElement("div");
+        b3v.className = "v"; b3v.appendChild(simeiPill);
+        b3.appendChild(b3v);
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Opção: " + textOrDash(data?.simei?.data_opcao) }));
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Exclusão: " + textOrDash(data?.simei?.data_exclusao) }));
+        b3.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Últ. atualização: " + parseISOorBRDate(data?.simei?.ultima_atualizacao) }));
+
+        badges.appendChild(b1); badges.appendChild(b2); badges.appendChild(b3);
+        hero.appendChild(badges);
+
+        const statusline = document.createElement("div");
+        statusline.className = "statusline okbox";
+
+        const leftLine = document.createElement("div");
+        leftLine.className = "left";
+        leftLine.appendChild(Object.assign(document.createElement("span"), { className:"dot ok" }));
+
+        const linkWrap = document.createElement("div");
+        linkWrap.appendChild(Object.assign(document.createElement("b"), { textContent:"Link: " }));
+        const a = document.createElement("a");
+        a.href = shareLink.href;
+        a.textContent = shareLink.textContent;
+        linkWrap.appendChild(a);
+        leftLine.appendChild(linkWrap);
+
+        const actions = document.createElement("div");
+        actions.className = "right-actions";
+
+        const btnPdf = document.createElement("button");
+        btnPdf.className = "btn secondary";
+        btnPdf.textContent = "Gerar PDF";
+        btnPdf.addEventListener("click", () => openPrintWindow(data));
+
+        const btnMd = document.createElement("button");
+        btnMd.className = "btn secondary";
+        btnMd.textContent = "Gerar Markdown";
+        btnMd.addEventListener("click", async () => {
+          const md = generateMarkdown(data);
+          downloadText("cnpj-" + digits + ".md", md, "text/markdown;charset=utf-8");
+          try { await navigator.clipboard.writeText(md); showToast("Markdown baixado e copiado."); }
+          catch { showToast("Markdown baixado."); }
+        });
+
+        const btnCopy = document.createElement("button");
+        btnCopy.className = "btn secondary";
+        btnCopy.textContent = "Copiar link";
+        btnCopy.addEventListener("click", async () => {
+          try { await navigator.clipboard.writeText(shareLink.href); showToast("Link copiado."); }
+          catch { showToast("Não foi possível copiar link."); }
+        });
+
+        actions.appendChild(btnPdf);
+        actions.appendChild(btnMd);
+        actions.appendChild(btnCopy);
+
+        statusline.appendChild(leftLine);
+        statusline.appendChild(actions);
+        hero.appendChild(statusline);
+
+        const ident = document.createElement("div");
+        ident.className = "card panel";
+        ident.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Identificação" }));
+        ident.appendChild(kvEl("Nome", textOrDash(data?.nome)));
+        ident.appendChild(kvEl("Fantasia", textOrDash(data?.fantasia)));
+        ident.appendChild(kvEl("Tipo", textOrDash(data?.tipo)));
+        ident.appendChild(kvEl("Porte", textOrDash(data?.porte)));
+        ident.appendChild(kvEl("Natureza Jurídica", textOrDash(data?.natureza_juridica)));
+        ident.appendChild(kvEl("Abertura", textOrDash(data?.abertura)));
+        ident.appendChild(kvEl("Capital Social", textOrDash(data?.capital_social)));
+        ident.appendChild(kvEl("EFR", textOrDash(data?.efr)));
+        ident.appendChild(kvEl("Situação Especial", textOrDash(data?.situacao_especial)));
+        ident.appendChild(kvEl("Data Situação Especial", textOrDash(data?.data_situacao_especial)));
+
+        const addr = document.createElement("div");
+        addr.className = "card panel full";
+        addr.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Endereço e contato" }));
+        const two = document.createElement("div");
+        two.className = "twoCols";
+        const col1 = document.createElement("div");
+        col1.appendChild(kvEl("Endereço", endereco || "—"));
+        col1.appendChild(kvEl("Município/UF", textOrDash(data?.municipio) + " / " + textOrDash(data?.uf)));
+        col1.appendChild(kvEl("CEP", textOrDash(data?.cep)));
+        const col2 = document.createElement("div");
+        col2.appendChild(kvEl("Telefone", textOrDash(data?.telefone)));
+        col2.appendChild(kvEl("E-mail", textOrDash(data?.email)));
+        col2.appendChild(kvEl("Última atualização (geral)", updated));
+        two.appendChild(col1); two.appendChild(col2);
+        addr.appendChild(two);
+
+        const stateTax = document.createElement("div");
+        stateTax.className = "card panel full";
+        stateTax.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Receita Estadual" }));
+        stateTax.appendChild(kvEl("Inscrições estaduais", chipsFromStateRegistrations(data?.inscricoes_estaduais)));
+
+        const cnae = document.createElement("div");
+        cnae.className = "card panel full";
+        cnae.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Atividades (CNAE)" }));
+        cnae.appendChild(kvEl("Principal", chipsFromActivities(data?.atividade_principal)));
+        const det = document.createElement("details");
+        const sum = document.createElement("summary");
+        const secCount = Array.isArray(data?.atividades_secundarias) ? data.atividades_secundarias.length : 0;
+        sum.appendChild(document.createTextNode("Secundárias "));
+        sum.appendChild(Object.assign(document.createElement("span"), { className:"sm", textContent:"(" + secCount + ")" }));
+        det.appendChild(sum);
+        const secWrap = document.createElement("div");
+        secWrap.style.marginTop = "10px";
+        secWrap.appendChild(chipsFromActivities(data?.atividades_secundarias));
+        det.appendChild(secWrap);
+        cnae.appendChild(det);
+
+        const qsa = document.createElement("div");
+        qsa.className = "card panel full";
+        qsa.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"QSA (sócios e administradores)" }));
+        qsa.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"Dados potencialmente sensíveis. Exibidos sob demanda." }));
+        const qsaDet = document.createElement("details");
+        const qsaSum = document.createElement("summary");
+        const qsaCount = Array.isArray(data?.qsa) ? data.qsa.length : 0;
+        qsaSum.appendChild(document.createTextNode("Mostrar QSA "));
+        qsaSum.appendChild(Object.assign(document.createElement("span"), { className:"sm", textContent:"(" + qsaCount + ")" }));
+        qsaDet.appendChild(qsaSum);
+        const qsaBody = document.createElement("div");
+        qsaBody.style.marginTop = "10px";
+        if (Array.isArray(data?.qsa) && data.qsa.length) {
+          for (const p of data.qsa) qsaBody.appendChild(kvEl(p?.nome || "—", p?.qual || "—"));
+        } else {
+          qsaBody.appendChild(Object.assign(document.createElement("div"), { className:"small", textContent:"—" }));
+        }
+        qsaDet.appendChild(qsaBody);
+        qsa.appendChild(qsaDet);
+
+        const sources = document.createElement("div");
+        sources.className = "card panel full";
+        sources.appendChild(Object.assign(document.createElement("div"), { className:"sec-title", textContent:"Fontes da consulta" }));
+        sources.appendChild(kvEl("Status", sourcesSummaryEl(data?._fontes)));
+        sources.appendChild(kvEl("Blocos", sourceDetailsEl(data?._fontes)));
+
+        grid.appendChild(hero);
+        grid.appendChild(ident);
+        grid.appendChild(addr);
+        grid.appendChild(stateTax);
+        grid.appendChild(cnae);
+        grid.appendChild(qsa);
+        grid.appendChild(sources);
+
+        out.appendChild(grid);
+      }
+
+      async function runSearch() {
+        const raw = cnpjInput.value;
+        const digits = onlyDigits(raw);
+        if (digits.length === 14) cnpjInput.value = formatCNPJ(digits);
+
+        setLoading(true);
+        out.innerHTML = "";
+
+        try {
+          const res = await fetchCNPJ(digits, { noCache: chkNoCache.checked });
+          renderData(res.data);
+          showToast(res.fromCache ? "Resultado do cache local." : "Consulta concluída.");
+        } catch (e) {
+          renderError("Não foi possível consultar o CNPJ", e?.message || String(e));
+          console.error(e);
+        } finally {
+          setLoading(false);
+        }
+      }
+
+      function clearAll() {
+        lastData = null;
+        out.innerHTML = "";
+        cnpjInput.value = "";
+        const url = new URL(location.href);
+        url.searchParams.delete("cnpj");
+        history.replaceState({}, "", url.toString());
+        updateShareLink(null);
+      }
+
+      let initialSearchRan = false;
+
+      async function runInitialSearchIfNeeded() {
+        if (initialSearchRan) return;
+        initialSearchRan = true;
+
+        const initial = new URL(location.href).searchParams.get("cnpj");
+        if (initial) {
+          const digits = onlyDigits(initial);
+          cnpjInput.value = formatCNPJ(digits);
+          updateShareLink(digits);
+          await runSearch();
+        } else {
+          updateShareLink(null);
+        }
+      }
+
+      async function initAuth() {
+        let savedPin = "";
+        try { savedPin = sessionStorage.getItem(PIN_STORAGE_KEY) || ""; } catch {}
+
+        if (!savedPin) {
+          showPinGate("");
+          return;
+        }
+
+        setPinLoading(true);
+
+        try {
+          const ok = await validatePin(savedPin);
+          if (!ok) {
+            showPinGate("");
+            return;
+          }
+          unlockApp(savedPin);
+          await runInitialSearchIfNeeded();
+        } catch {
+          showPinGate("Não foi possível validar a sessão.");
+        } finally {
+          setPinLoading(false);
+        }
+      }
+
+      pinForm.addEventListener("submit", handlePinSubmit);
+      themeSelect.addEventListener("change", () => applyTheme(themeSelect.value));
+      btnSearch.addEventListener("click", runSearch);
+      btnClear.addEventListener("click", clearAll);
+      cnpjInput.addEventListener("keydown", (e) => { if (e.key === "Enter") runSearch(); });
+
+      initTheme();
+      initAuth();
+    })();
+  </script>
+</body>
+</html>
